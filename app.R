@@ -21,6 +21,10 @@ model_list <- lapply(models_funcs, function(func) {
   })
 })
 
+read_md <- function(md_file){
+  readLines(md_file) |>
+    paste(collapse = "\n")
+}
 
 snake_to_title <- function(snake_case) {
   stringr::str_replace_all(snake_case, "_", " ") |>
@@ -28,6 +32,8 @@ snake_to_title <- function(snake_case) {
 }
 
 available_models <- unlist(model_list)
+
+welcome_message <- read_md("welcome_message.md")
 
 ui <- bslib::page_sidebar(
   title = "Ellmer LLM playground",
@@ -55,10 +61,17 @@ ui <- bslib::page_sidebar(
     bslib::accordion(
       open = FALSE,
       bslib::accordion_panel("Optional API arguments", uiOutput("api_args"))
-    )
+    ),
+    tags$br(),
+    actionButton("clear", "Clear chat")
   ),
-  tags$h3("Chat"),
-  tags$div(chat_ui("chat"))
+  tags$h5("Chat"),
+  tags$div(
+    chat_ui(
+      "chat", 
+      messages = welcome_message
+    )
+  )
 )
 
 server <- function(input, output, session) {
@@ -92,6 +105,10 @@ server <- function(input, output, session) {
   observeEvent(input$chat_user_input, {
     stream <- chat()$stream_async(input$chat_user_input)
     chat_append("chat", stream)
+  })
+  
+  observeEvent(input$clear, {
+    chat_clear("chat")
   })
 }
 
