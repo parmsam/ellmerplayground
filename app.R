@@ -78,25 +78,6 @@ ui <- bslib::page_sidebar(
 )
 
 server <- function(input, output, session) {
-  # Restore bookmarked state
-  observe({
-    # Restore URL parameters on startup
-    if (!is.null(session$clientData$url_search)) {
-      query <- parseQueryString(session$clientData$url_search)
-      
-      # Restore input values from bookmarked state
-      if (!is.null(query$chat_function)) {
-        updateSelectInput(session, "chat_function", selected = query$chat_function)
-      }
-      if (!is.null(query$model)) {
-        updateSelectizeInput(session, "model", selected = query$model)
-      }
-      if (!is.null(query$system_prompt)) {
-        updateTextAreaInput(session, "system_prompt", value = query$system_prompt)
-      }
-    }
-  })
-  
   output$api_args <- renderUI({
     available_params <- formals(ellmer::params)
     ignore_params <- "..."
@@ -133,39 +114,13 @@ server <- function(input, output, session) {
     chat_clear("chat")
   })
   
-  # Bookmarking functions
-  onBookmark(function(state) {
-    # Save current input values to the bookmarked state
-    state$values$chat_function <- input$chat_function
-    state$values$model <- input$model
-    state$values$system_prompt <- input$system_prompt
-    state$values$temperature <- input$temperature
-    state$values$max_tokens <- input$max_tokens
-    state$values$stop_sequences <- input$stop_sequences
+  observe({
+    reactiveValuesToList(input)
+    session$doBookmark()
   })
+  onBookmarked(updateQueryString)
   
-  onRestore(function(state) {
-    # Restore input values from bookmarked state
-    if (!is.null(state$values$chat_function)) {
-      updateSelectInput(session, "chat_function", selected = state$values$chat_function)
-    }
-    if (!is.null(state$values$model)) {
-      updateSelectizeInput(session, "model", selected = state$values$model)
-    }
-    if (!is.null(state$values$system_prompt)) {
-      updateTextAreaInput(session, "system_prompt", value = state$values$system_prompt)
-    }
-    if (!is.null(state$values$temperature)) {
-      updateNumericInput(session, "temperature", value = state$values$temperature)
-    }
-    if (!is.null(state$values$max_tokens)) {
-      updateNumericInput(session, "max_tokens", value = state$values$max_tokens)
-    }
-    if (!is.null(state$values$stop_sequences)) {
-      updateTextInput(session, "stop_sequences", value = state$values$stop_sequences)
-    }
-  })
 }
 
-enableBookmarking("server")
-shinyApp(ui, server, enableBookmarking = "server")
+enableBookmarking("url")
+shinyApp(ui, server, enableBookmarking = "url")
