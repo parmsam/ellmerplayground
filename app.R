@@ -3,6 +3,7 @@ library(shinychat)
 library(ellmer)
 library(stringr)
 library(purrr)
+library(jsonlite)
 
 chat_funcs <- ls("package:ellmer") |>
   str_subset("^chat_")
@@ -66,6 +67,10 @@ ui <- bslib::page_sidebar(
     actionButton("clear", "Clear chat"),
     tags$br(),
     tags$br(),
+    downloadButton("export_json", "Export Inputs to JSON", 
+                   class = "btn-outline-secondary"),
+    tags$br(),
+    tags$br(),
     bookmarkButton()
   ),
   tags$h5("Chat"),
@@ -113,6 +118,21 @@ server <- function(input, output, session) {
   observeEvent(input$clear, {
     chat_clear("chat")
   })
+  
+  # Download handler for exporting inputs to JSON
+  output$export_json <- downloadHandler(
+    filename = function() {
+      paste0("ellmer_inputs_", Sys.Date(), ".json")
+    },
+    content = function(file) {
+      # Get all reactive values from input
+      input_list <- reactiveValuesToList(input)
+      
+      # Convert to JSON and write to file
+      jsonlite::write_json(input_list, file, pretty = TRUE, auto_unbox = TRUE)
+    },
+    contentType = "application/json"
+  )
   
   observe({
     reactiveValuesToList(input)
