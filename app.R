@@ -2,7 +2,7 @@ library(shiny)
 library(shinychat)
 library(ellmer)
 library(stringr)
-
+library(purrr)
 
 chat_funcs <- ls("package:ellmer") |>
   str_subset("^chat_")
@@ -21,6 +21,12 @@ model_list <- lapply(models_funcs, function(func) {
   })
 })
 
+
+snake_to_title <- function(snake_case) {
+  stringr::str_replace_all(snake_case, "_", " ") |>
+    stringr::str_to_title()
+}
+
 available_models <- unlist(model_list)
 
 ui <- bslib::page_sidebar(
@@ -33,30 +39,46 @@ ui <- bslib::page_sidebar(
       choices = chat_funcs
     ),
     selectizeInput(
-      "model", 
-      "Model", 
-      selected = "gpt-4o-mini", 
+      "model",
+      "Model",
+      selected = "gpt-4o-mini",
       choices = available_models,
-      options = list(create = TRUE) 
+      options = list(create = TRUE)
     ),
     textAreaInput(
       "system_prompt",
       "System Prompt",
+      height = "10rem",
       value = NULL,
       placeholder = "Describe desired model behavior (tone, tool usage, response style)"
     ),
-    numericInput("temperature", "Temperature", NULL),
-    numericInput("max_tokens", "Max Tokens", NULL),
+    bslib::accordion(
+      open = FALSE,
+      bslib::accordion_panel("Optional API arguments", uiOutput("api_args"))
+    )
   ),
+  tags$h3("Chat"),
   tags$div(chat_ui("chat"))
 )
 
 server <- function(input, output, session) {
+  output$api_args <- renderUI({
+    available_params <- formals(ellmer::params)
+    ignore_params <- "..."
+    param_names <- names(available_params[!names(available_params) %in% ignore_params])
+    character_params <- "stop_sequences"
+    map(param_names, ~ {
+      if (!.x %in% character_params) {
+        numericInput(.x, snake_to_title(.x), value = isolate(input[[.x]]))
+      } else {
+        textInput(.x, snake_to_title(.x), value = isolate(input[[.x]]))
+      }
+    })
+  })
+  
   params_selected <- reactive({
-    list(
-      temperature = input$temperature,
-      max_tokens = input$max_tokens
-    )
+    list(temperature = input$temperature,
+         max_tokens = input$max_tokens)
   })
   
   chat <- reactive({
