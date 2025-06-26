@@ -23,18 +23,12 @@ model_list <- lapply(models_funcs, function(func) {
     NULL
   })
 })
-
-read_md <- function(md_file){
-  readLines(md_file) |>
-    paste(collapse = "\n")
-}
-
-snake_to_title <- function(snake_case) {
-  stringr::str_replace_all(snake_case, "_", " ") |>
-    stringr::str_to_title()
-}
-
 available_models <- unlist(model_list)
+
+available_params <- formals(ellmer::params)
+ignore_params <- "..."
+available_param_names <- names(available_params[!names(available_params) %in% ignore_params])
+character_params <- "stop_sequences"
 
 available_tools <- unlist(lapply(search(), function(env_name) {
   tryCatch({
@@ -104,11 +98,7 @@ ui <- bslib::page_sidebar(
 
 server <- function(input, output, session) {
   output$api_args <- renderUI({
-    available_params <- formals(ellmer::params)
-    ignore_params <- "..."
-    param_names <- names(available_params[!names(available_params) %in% ignore_params])
-    character_params <- "stop_sequences"
-    map(param_names, ~ {
+    map(available_param_names, ~ {
       if (!.x %in% character_params) {
         numericInput(.x, snake_to_title(.x), value = isolate(input[[.x]]))
       } else {
@@ -118,11 +108,19 @@ server <- function(input, output, session) {
   })
   
   params_selected <- reactive({
-    list(temperature = input$temperature,
-         max_tokens = input$max_tokens)
+    params_list <- lapply(available_param_names, function(param) {
+      if (input[[param]] == "" || is.na(input[[param]])) {
+        NULL
+      } else {
+        input[[param]]
+      }
+    })
+    names(params_list) <- available_param_names
+    params_list
   })
   
   chat <- reactive({
+    print(params_selected())
     ellmer::chat_openai(
       model = input$model,
       system_prompt = input$system_prompt,
@@ -148,16 +146,13 @@ server <- function(input, output, session) {
     chat_clear("chat")
   })
   
-  # Download handler for exporting inputs to JSON
   output$export_json <- downloadHandler(
     filename = function() {
       paste0("ellmer_inputs_", Sys.Date(), ".json")
     },
     content = function(file) {
-      # Get all reactive values from input
       input_list <- reactiveValuesToList(input)
       
-      # Convert to JSON and write to file
       jsonlite::write_json(input_list, file, pretty = TRUE, auto_unbox = TRUE)
     },
     contentType = "application/json"

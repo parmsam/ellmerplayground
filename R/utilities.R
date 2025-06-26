@@ -24,3 +24,13 @@ tool_rnorm <- tool(
     open_world_hint = FALSE
   )
 )
+
+read_md <- function(md_file){
+  readLines(md_file) |>
+    paste(collapse = "\n")
+}
+
+snake_to_title <- function(snake_case) {
+  stringr::str_replace_all(snake_case, "_", " ") |>
+    stringr::str_to_title()
+}
