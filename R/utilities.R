@@ -12,7 +12,7 @@ tool_get_current_time <- ellmer::tool(
 )
 
 #' Tool to draw random numbers from a normal distributionß
-tool_rnorm <- tool(
+tool_rnorm <- ellmer::tool(
   rnorm,
   "Drawn numbers from a random normal distribution",
   n = type_integer("The number of observations. Must be a positive integer."),
