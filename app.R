@@ -1,4 +1,5 @@
 library(shiny)
+library(bslib)
 library(shinychat)
 library(ellmer)
 library(stringr)
@@ -45,47 +46,50 @@ welcome_message <- read_md("welcome_message.md")
 
 ui <- bslib::page_sidebar(
   title = "Ellmer LLM playground",
-  sidebar = tags$div(
-    selectInput(
-      "chat_function",
-      "Provider",
-      selected = "chat_openai",
-      choices = chat_funcs
+  sidebar = sidebar(
+    tags$div(
+      selectInput(
+        "chat_function",
+        "Provider",
+        selected = "chat_openai",
+        choices = chat_funcs
+      ),
+      selectizeInput(
+        "model",
+        "Model",
+        selected = "gpt-4o-mini",
+        choices = available_models,
+        options = list(create = TRUE)
+      ),
+      textAreaInput(
+        "system_prompt",
+        "System Prompt",
+        height = "10rem",
+        value = NULL,
+        placeholder = "Describe desired model behavior (tone, tool usage, response style)"
+      ),
+      selectizeInput(
+        "tools",
+        "Available Tools",
+        choices = available_tools,
+        selected = NULL,
+        multiple = TRUE
+      ),
+      bslib::accordion(
+        open = FALSE,
+        bslib::accordion_panel("Optional API arguments", uiOutput("api_args"))
+      ),
+      tags$br(),
+      actionButton("clear", "Clear chat"),
+      tags$br(),
+      tags$br(),
+      downloadButton("export_json", "Export Inputs to JSON", 
+                     class = "btn-outline-secondary"),
+      tags$br(),
+      tags$br(),
+      bookmarkButton()
     ),
-    selectizeInput(
-      "model",
-      "Model",
-      selected = "gpt-4o-mini",
-      choices = available_models,
-      options = list(create = TRUE)
-    ),
-    textAreaInput(
-      "system_prompt",
-      "System Prompt",
-      height = "10rem",
-      value = NULL,
-      placeholder = "Describe desired model behavior (tone, tool usage, response style)"
-    ),
-    selectizeInput(
-      "tools",
-      "Available Tools",
-      choices = available_tools,
-      selected = NULL,
-      multiple = TRUE
-    ),
-    bslib::accordion(
-      open = FALSE,
-      bslib::accordion_panel("Optional API arguments", uiOutput("api_args"))
-    ),
-    tags$br(),
-    actionButton("clear", "Clear chat"),
-    tags$br(),
-    tags$br(),
-    downloadButton("export_json", "Export Inputs to JSON", 
-                   class = "btn-outline-secondary"),
-    tags$br(),
-    tags$br(),
-    bookmarkButton()
+    width = "30%"
   ),
   tags$h5("Chat"),
   tags$div(
