@@ -5,6 +5,8 @@ library(stringr)
 library(purrr)
 library(jsonlite)
 
+source("R/utilities.R")
+
 chat_funcs <- ls("package:ellmer") |>
   str_subset("^chat_")
 names(chat_funcs) <- chat_funcs |>
@@ -34,6 +36,17 @@ snake_to_title <- function(snake_case) {
 
 available_models <- unlist(model_list)
 
+available_tools <- unlist(lapply(search(), function(env_name) {
+  tryCatch({
+    objs <- ls(envir = as.environment(env_name))
+    tool_defs <- objs[sapply(objs, function(obj_name) {
+      obj <- get(obj_name, envir = as.environment(env_name))
+      inherits(obj, "ellmer::ToolDef")
+    })]
+    tool_defs
+  }, error = function(e) character(0))
+}))
+
 welcome_message <- read_md("welcome_message.md")
 
 ui <- bslib::page_sidebar(
@@ -58,6 +71,13 @@ ui <- bslib::page_sidebar(
       height = "10rem",
       value = NULL,
       placeholder = "Describe desired model behavior (tone, tool usage, response style)"
+    ),
+    selectizeInput(
+      "tools",
+      "Available Tools",
+      choices = available_tools,
+      selected = NULL,
+      multiple = TRUE
     ),
     bslib::accordion(
       open = FALSE,
@@ -108,6 +128,15 @@ server <- function(input, output, session) {
       system_prompt = input$system_prompt,
       api_args = params_selected()
     )
+  })
+  
+  observe({
+    if (!is.null(input$chat_function)){
+      purrr::walk(input$tools, ~ {
+        tool_func <- get(.x)
+        chat()$register_tool(tool_func)
+      })
+    }
   })
   
   observeEvent(input$chat_user_input, {
