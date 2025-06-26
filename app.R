@@ -170,5 +170,5 @@ server <- function(input, output, session) {
   
 }
 
-enableBookmarking("url")
+enableBookmarking("server")
 shinyApp(ui, server)
