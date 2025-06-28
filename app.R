@@ -113,7 +113,7 @@ server <- function(input, output, session) {
   
   params_selected <- reactive({
     params_list <- lapply(available_param_names, function(param) {
-      if (input[[param]] == "" || is.na(input[[param]])) {
+      if (is.null(input[[param]]) || is.na(input[[param]]) || input[[param]] == "") {
         NULL
       } else {
         input[[param]]
