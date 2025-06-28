@@ -34,3 +34,14 @@ snake_to_title <- function(snake_case) {
   stringr::str_replace_all(snake_case, "_", " ") |>
     stringr::str_to_title()
 }
+
+clean_list <- function(x) {
+  lapply(x, function(element) {
+    if (is.null(element) || 
+        (length(element) == 1 && (is.na(element) || identical(element, "")))) {
+      NULL
+    } else {
+      element
+    }
+  })
+}

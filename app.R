@@ -156,8 +156,14 @@ server <- function(input, output, session) {
     },
     content = function(file) {
       input_list <- reactiveValuesToList(input)
-      
-      jsonlite::write_json(input_list, file, pretty = TRUE, auto_unbox = TRUE)
+      input_list <- clean_list(input_list)
+      jsonlite::write_json(
+        input_list,
+        file,
+        pretty = TRUE,
+        auto_unbox = TRUE,
+        null = "null"
+      )
     },
     contentType = "application/json"
   )
